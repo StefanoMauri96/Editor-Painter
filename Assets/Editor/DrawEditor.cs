@@ -7,16 +7,20 @@ public class DrawEditor : EditorWindow
 {
 
     private Material material;
-    private List<Line> lines;
+    private List<Line> lines = new List<Line>();
     private Line currentLine = new Line();
     private bool canCreateNewLine = false;
     private Color selectedColor = Color.white;
 
-    private class Line
+    private Color[] avaiableColors = new Color[]
     {
-        public List<Vector3> points = new List<Vector3>();
-        public Color colorLine = Color.white;
-    }
+        Color.white,
+        Color.red,
+        Color.blue,
+        Color.green,
+        Color.yellow,
+        Color.cyan,
+    };
 
 
     [MenuItem("Tool/Free Draw")]
@@ -53,7 +57,7 @@ public class DrawEditor : EditorWindow
 
         GUILayout.BeginHorizontal();      
 
-        if (Event.current.button == 0 && Event.current.isMouse == true)
+        if(Event.current.button == 0 && Event.current.isMouse == true)
         {
 
             canCreateNewLine = true;
@@ -69,7 +73,7 @@ public class DrawEditor : EditorWindow
 
         }
 
-        if (Event.current.button == 1)
+        if(Event.current.button == 1)
         {
 
             lines.Clear();
@@ -77,7 +81,7 @@ public class DrawEditor : EditorWindow
 
         }
 
-        if (Event.current.type == EventType.Repaint)
+        if(Event.current.type == EventType.Repaint)
         {
             FreeDraw();
             DrawMouseQuad();
@@ -86,23 +90,8 @@ public class DrawEditor : EditorWindow
         // End our horizontal 
         GUILayout.EndHorizontal();
 
-        GUI.backgroundColor = Color.red;
-
-        if (GUI.Button(new Rect(0, 0, 30, 30),""))
-        {
-
-            selectedColor = Color.red;
-
-        }
-
-        GUI.backgroundColor = Color.blue;
-        if (GUI.Button(new Rect(30,0, 30, 30), ""))
-        {
-
-            selectedColor = Color.blue;
-
-        }
-
+        ShowColorMenu();
+        ShowSaveMenu();
 
     }
 
@@ -143,12 +132,16 @@ public class DrawEditor : EditorWindow
 
                 GL.Begin(GL.LINES);
                 GL.Color(lines[i].colorLine);
+                //GL.Vertex3(lines[i].points[j].x+1, lines[i].points[j].y+1, 0f);
                 GL.Vertex3(lines[i].points[j].x, lines[i].points[j].y, 0f);
+                //GL.Vertex3(lines[i].points[j].x-1, lines[i].points[j].y-1, 0f);
 
                 if (j + 1 < lines[i].points.Count)
                 {
 
+                    //GL.Vertex3(lines[i].points[j + 1].x+1, lines[i].points[j + 1].y+1, 0f);
                     GL.Vertex3(lines[i].points[j + 1].x, lines[i].points[j + 1].y, 0f);
+                    //GL.Vertex3(lines[i].points[j + 1].x-1, lines[i].points[j + 1].y-1, 0f);
 
                 }
 
@@ -238,6 +231,102 @@ public class DrawEditor : EditorWindow
         currentLine = new Line();
         currentLine.colorLine = selectedColor;
         lines.Add(currentLine);
+
+    }
+
+    private void ShowColorMenu()
+    {
+
+        GUILayout.BeginHorizontal();
+
+        int buttonPosition = 0;
+        int buttonHeight = 30;
+        int buttonWeight = 30;
+
+        for(int i=0; i< avaiableColors.Length; i++)
+        {
+
+            GUI.backgroundColor = avaiableColors[i];
+
+            if (GUI.Button(new Rect(buttonPosition, 0, buttonWeight, buttonHeight), ""))
+            {
+
+                SelectColor(avaiableColors[i]);
+
+            }
+
+            buttonPosition += 30;
+
+        }
+
+        GUILayout.EndHorizontal();
+
+    }
+
+    private void SelectColor(Color color)
+    {
+
+        selectedColor = color;
+        currentLine.colorLine = color;
+
+    }
+
+    private void ShowSaveMenu()
+    {
+
+        GUILayout.BeginHorizontal();
+
+        if (GUI.Button(new Rect(0, 50, 100, 30), "Save"))
+        {
+
+            SaveDraw();
+
+        }
+
+        if (GUI.Button(new Rect(120, 50, 100, 30), "Load"))
+        {
+
+            LoadDraw();
+
+        }
+
+        GUILayout.EndHorizontal();
+
+    }
+
+    private void SaveDraw()
+    {
+
+        Draw draw = new Draw();
+        draw.name = "Test";
+        draw.lines = lines;
+
+        AssetDatabase.CreateAsset(draw, "Assets/draw.asset");
+        AssetDatabase.Refresh();
+
+    }
+
+    private void LoadDraw()
+    {
+
+        AssetDatabase.Refresh();
+        Draw draw = new Draw();
+
+        string path = EditorUtility.OpenFilePanel("Load Draw", "Assets", "asset");
+        AssetDatabase.ImportAsset(path);
+        draw = AssetDatabase.LoadAssetAtPath<Draw>(path);
+
+        if(draw == null)
+        {
+
+            Debug.Log("Asset null");
+            return;
+
+        }
+
+        Debug.Log(draw.name);
+        Debug.Log(draw.lines.Count);
+        lines = draw.lines;
 
     }
 
