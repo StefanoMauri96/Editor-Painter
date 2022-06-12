@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using System.Text.RegularExpressions;
 
 public class DrawEditor : EditorWindow
 {
@@ -297,11 +298,14 @@ public class DrawEditor : EditorWindow
     private void SaveDraw()
     {
 
-        Draw draw = new Draw();
-        draw.name = "Test";
-        draw.lines = lines;
+        List<Line> l = new List<Line>(lines);
 
-        AssetDatabase.CreateAsset(draw, "Assets/draw.asset");
+        Draw draw = new Draw("Test", l);
+
+        string path = EditorUtility.SaveFilePanelInProject("Save Draw", "Draw", "asset", "Plaese enter file name to save your draw");
+        path = GetRelativePath(path);
+
+        AssetDatabase.CreateAsset(draw, path);
         AssetDatabase.Refresh();
 
     }
@@ -310,11 +314,10 @@ public class DrawEditor : EditorWindow
     {
 
         AssetDatabase.Refresh();
-        Draw draw = new Draw();
 
         string path = EditorUtility.OpenFilePanel("Load Draw", "Assets", "asset");
-        AssetDatabase.ImportAsset(path);
-        draw = AssetDatabase.LoadAssetAtPath<Draw>(path);
+        path = GetRelativePath(path);
+        Draw draw = AssetDatabase.LoadAssetAtPath<Draw>(path);
 
         if(draw == null)
         {
@@ -324,9 +327,17 @@ public class DrawEditor : EditorWindow
 
         }
 
-        Debug.Log(draw.name);
-        Debug.Log(draw.lines.Count);
-        lines = draw.lines;
+        lines = new List<Line>(draw.lines);
+
+    }
+
+    private string GetRelativePath(string absloutePath)
+    {
+
+        Regex rgx = new Regex("Assets");
+
+        string relativePath = "Assets" + rgx.Split(absloutePath)[1];
+        return relativePath;
 
     }
 
